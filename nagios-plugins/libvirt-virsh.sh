@@ -3,10 +3,10 @@
 
 sudo virsh list 2>&1 > /dev/null
 if [ $? -eq 1 ]; then
-  echo "CRITICAL - problem with libvirt"
-  exit 3
+    echo "CRITICAL - problem with libvirt"
+    exit 3
 else
-  vms=$(sudo virsh list | grep instance | wc -l)
-  echo "OK - ${vms} running"
-  exit 0
+    vms=$(sudo virsh list | grep instance | wc -l)
+    echo "OK - ${vms} running"
+    exit 0
 fi

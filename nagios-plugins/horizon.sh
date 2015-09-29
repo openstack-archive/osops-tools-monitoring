@@ -20,8 +20,8 @@ rm /tmp/cookie.txt
 rm /tmp/horizon.txt
 
 if [ "${TIMEOUT_CHECK}" == "" ] || [ "${LOGIN_CHECK}" != "" ]; then
-  echo "CRITICAL - Horizon is inaccessible"
-  exit 2
+    echo "CRITICAL - Horizon is inaccessible"
+    exit 2
 fi
 
 echo "Horizon Login OK"
