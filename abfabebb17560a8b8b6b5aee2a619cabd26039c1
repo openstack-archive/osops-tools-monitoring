@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+1: Tom Fifield <tom@openstack.org>
+Code-Review+1: Ian Wienand <iwienand@redhat.com>
+Code-Review+2: JJ Asghar <jj@getchef.com>
+Workflow+1: JJ Asghar <jj@getchef.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 19 Oct 2015 19:46:02 +0000
+Reviewed-on: https://review.openstack.org/229047
+Project: openstack/osops-tools-monitoring
+Branch: refs/heads/master
