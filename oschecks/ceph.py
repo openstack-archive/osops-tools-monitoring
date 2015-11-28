@@ -29,7 +29,7 @@ def per(percent, value):
     return percent / 100 * value
 
 
-def remaning(avail, total):
+def remaining(avail, total):
     return "(%dMB/%dMB)" % (avail/1024, total/1024)
 
 
@@ -57,12 +57,12 @@ def interpret_output_df(output):
     if used + avail != total:
         return (1, '[WARN] Used + Avail. != Total space')
     elif avail < per(crit_percent, total):
-        return (2, "[ERR] Ceph df avail. critical %s" % remaning(avail, total))
+        return (2, "[ERR] Ceph df avail. critical %s" % remaining(avail, total))
     elif avail < per(warn_percent, total):
-        return (1, "[WARN] Ceph df avail. waring %s" % remaning(avail, total))
+        return (1, "[WARN] Ceph df avail. waring %s" % remaining(avail, total))
     else:
         return (0, "[OK] Ceph df avail. seems good %s" %
-                remaning(avail, total))
+                remaining(avail, total))
 
 
 def check_ceph_df():
