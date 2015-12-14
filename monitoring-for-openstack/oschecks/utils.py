@@ -120,8 +120,8 @@ class Nova(object):
         self.nova.parser = self.nova.get_base_parser()
         self.add_argument = self.nova.parser.add_argument
 
-    def setup(self, api_version='1.1'):
-        from novaclient import client
+    def setup(self):
+        from novaclient.client import Client
         (options, args) = self.nova.parser.parse_known_args(self.base_argv)
         if options.help:
             options.command = None
@@ -130,9 +130,9 @@ class Nova(object):
         auth_token = None
         if options.os_auth_token and options.os_endpoint:
             auth_token = options.os_auth_token
-        if options.os_compute_api_version:
-            api_version = options.os_compute_api_version
-        client = client.get_client_class(api_version)(
+        api_version = '2.1'
+        nova_client = Client(
+            api_version,
             options.os_username,
             options.os_password,
             options.os_tenant_name,
@@ -143,7 +143,7 @@ class Nova(object):
             cacert=options.os_cacert,
             insecure=options.insecure,
             timeout=options.timeout)
-        return options, args, client
+        return options, args, nova_client
 
 
 class Glance(object):
