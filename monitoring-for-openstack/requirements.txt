@@ -5,4 +5,5 @@ python-glanceclient
 python-keystoneclient
 python-neutronclient
 python-novaclient
+python-openstackclient
 six

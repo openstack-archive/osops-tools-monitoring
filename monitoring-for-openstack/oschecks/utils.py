@@ -237,39 +237,27 @@ class Neutron(object):
 
 class Keystone(object):
     def __init__(self):
-        from keystoneclient import shell
-        self.keystone = shell.OpenStackIdentityShell()
-        self.base_argv = copy.deepcopy(sys.argv[1:])
-        self.keystone.parser = self.keystone.get_base_parser()
-        self.add_argument = self.keystone.parser.add_argument
+        if (sys.version_info > (3, 0)):
+            # Python 3 code in this block
+            from io import StringIO
+        else:
+            # Python 2 code in this block
+            from StringIO import StringIO
 
-    def setup(self, api_version="2.0"):
-        (options, args) = self.keystone.parser.parse_known_args(self.base_argv)
-        if options.help:
-            self.keystone.do_help(options)
-            sys.exit(2)
-        self.keystone.auth_check(options)
-        token = None
-        if options.os_token and options.os_endpoint:
-            token = options.os_token
-        if options.os_identity_api_version:
-            api_version = options.os_identity_api_version
-        client = self.keystone.get_api_class(api_version)(
-            username=options.os_username,
-            tenant_name=options.os_tenant_name,
-            tenant_id=options.os_tenant_id,
-            token=token,
-            endpoint=options.os_endpoint,
-            password=options.os_password,
-            auth_url=options.os_auth_url,
-            region_name=options.os_region_name,
-            cacert=options.os_cacert,
-            key=options.os_key,
-            cert=options.os_cert,
-            insecure=options.insecure,
-            debug=options.debug,
-            use_keyring=options.os_cache,
-            force_new_token=options.force_new_token,
-            stale_duration=options.stale_duration,
-            timeout=options.timeout)
-        return options, args, client
+        from openstackclient import shell
+        self.shell = shell.OpenStackShell()
+        self.shell.stdout = StringIO()
+        self.shell.stderr = StringIO()
+        self.help = False
+        
+
+    def run(self):
+        jformat = ['-f', 'json']
+        command = ['token', 'issue']
+        jempty  = '{"id": ""}'
+        if 'help' in sys.argv or '--help' in sys.argv or '-h' in sys.argv or len(sys.argv[1:]) == 0:
+            t = self.shell.run(command)
+            return jempty
+        else:
+            self.cmd = self.shell.run(sys.argv[1:] + command + jformat)
+            return self.shell.stdout.getvalue() or jempty

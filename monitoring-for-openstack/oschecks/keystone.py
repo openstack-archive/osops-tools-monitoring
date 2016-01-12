@@ -19,14 +19,17 @@
 # under the License.
 
 from oschecks import utils
+import json
 
 
 def _check_keystone_api():
     keystone = utils.Keystone()
 
     def check_token():
-        options, args, client = keystone.setup()
-        return client.service_catalog.get_token()
+        try:
+            return json.loads(keystone.run())['id']
+        except ValueError:
+            return ''
 
     elapsed, token = utils.timeit(check_token)
     if not token:
