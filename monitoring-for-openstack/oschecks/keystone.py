@@ -27,9 +27,18 @@ def _check_keystone_api():
 
     def check_token():
         try:
-            return json.loads(keystone.run())['id']
+            result = json.loads(keystone.run())
+            if type(result) is dict:
+                return result['id']
+            elif type(result) is list:
+                # We may have a cliff tab output instead of cliff.
+                for row in result:
+                    if row['Field'] == 'id':
+                        return row['Value']
         except ValueError:
             return ''
+        # Nothing found.
+        return ''
 
     elapsed, token = utils.timeit(check_token)
     if not token:

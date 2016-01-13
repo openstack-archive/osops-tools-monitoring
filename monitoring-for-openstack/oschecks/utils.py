@@ -256,7 +256,7 @@ class Keystone(object):
         command = ['token', 'issue']
         jempty  = '{"id": ""}'
         if 'help' in sys.argv or '--help' in sys.argv or '-h' in sys.argv or len(sys.argv[1:]) == 0:
-            t = self.shell.run(command)
+            self.shell.run(command)
             return jempty
         else:
             self.cmd = self.shell.run(sys.argv[1:] + command + jformat)
