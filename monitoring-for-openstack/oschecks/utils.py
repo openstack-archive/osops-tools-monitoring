@@ -252,12 +252,12 @@ class Keystone(object):
 
 
     def run(self):
-        jformat = ['-f', 'json']
+        vformat = ['-f', 'value', '-c', 'id']
         command = ['token', 'issue']
-        jempty  = '{"id": ""}'
+        vempty  = ''
         if 'help' in sys.argv or '--help' in sys.argv or '-h' in sys.argv or len(sys.argv[1:]) == 0:
-            t = self.shell.run(command)
-            return jempty
+            self.shell.run(command)
+            return vempty
         else:
-            self.cmd = self.shell.run(sys.argv[1:] + command + jformat)
-            return self.shell.stdout.getvalue() or jempty
+            self.cmd = self.shell.run(sys.argv[1:] + command + vformat)
+            return self.shell.stdout.getvalue() or vempty
