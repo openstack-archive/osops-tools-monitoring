@@ -2,6 +2,8 @@
 
 Tools to monitor OpenStack
 
+Please see the wiki page at https://wiki.openstack.org/wiki/Osops for other osops tools & repos.
+
 ## Directories
 
 [monitoring-for-openstack/](monitoring-for-openstack): a python application to help do some monitoring for OpenStack Clouds
