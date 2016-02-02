@@ -4,6 +4,11 @@ Tools to monitor OpenStack
 
 Please see the wiki page at https://wiki.openstack.org/wiki/Osops for other osops tools & repos.
 
+## Report bugs
+Please use [launchpad][launchpad] to report bugs.
+
+[launchpad]: https://bugs.launchpad.net/osops
+
 ## Directories
 
 [monitoring-for-openstack/](monitoring-for-openstack): a python application to help do some monitoring for OpenStack Clouds
