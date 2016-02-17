@@ -117,7 +117,7 @@ class Nova(object):
         from novaclient import shell
         self.nova = shell.OpenStackComputeShell()
         self.base_argv = copy.deepcopy(sys.argv[1:])
-        self.nova.parser = self.nova.get_base_parser()
+        self.nova.parser = self.nova.get_base_parser(self.base_argv)
         self.add_argument = self.nova.parser.add_argument
 
     def setup(self):
@@ -135,8 +135,16 @@ class Nova(object):
             api_version,
             options.os_username,
             options.os_password,
-            options.os_tenant_name,
-            tenant_id=options.os_tenant_id,
+            getattr(
+                options, 'os_project_name', getattr(
+                    options, 'os_tenant_name', None
+                )
+            ),
+            tenant_id=getattr(
+                options, 'os_project_id', getattr(
+                    options, 'os_tenant_id', None
+                )
+            ),
             auth_token=auth_token,
             auth_url=options.os_auth_url,
             region_name=options.os_region_name,
