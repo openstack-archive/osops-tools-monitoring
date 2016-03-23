@@ -1,0 +1,9 @@
+Code-Review+1: Joseph Bajin <jbajin@verisign.com>
+Code-Review+2: Mike Dorman <mdorman@godaddy.com>
+Workflow+1: Mike Dorman <mdorman@godaddy.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 23 Mar 2016 16:05:10 +0000
+Reviewed-on: https://review.openstack.org/296430
+Project: openstack/osops-tools-monitoring
+Branch: refs/heads/master
