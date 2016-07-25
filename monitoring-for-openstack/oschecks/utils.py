@@ -127,9 +127,7 @@ class Nova(object):
             options.command = None
             self.nova.do_help(options)
             sys.exit(2)
-        auth_token = None
-        if options.os_auth_token and options.os_endpoint:
-            auth_token = options.os_auth_token
+        auth_token = getattr(args, 'os_token', None)
         api_version = '2.1'
         nova_client = Client(
             api_version,
