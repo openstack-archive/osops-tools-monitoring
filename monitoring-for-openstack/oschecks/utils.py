@@ -260,12 +260,19 @@ class Keystone(object):
 
 
     def run(self):
-        vformat = ['-f', 'value', '-c', 'id']
         command = ['token', 'issue']
-        vempty  = ''
-        if 'help' in sys.argv or '--help' in sys.argv or '-h' in sys.argv or len(sys.argv[1:]) == 0:
-            self.shell.run(command)
-            return vempty
+        vformat = ['-f', 'value', '-c', 'id']
+        if 'help' in sys.argv or '--help' in sys.argv or '-h' in sys.argv:
+            rc = self.shell.run(command)
         else:
-            self.cmd = self.shell.run(sys.argv[1:] + command + vformat)
-            return self.shell.stdout.getvalue() or vempty
+            cmd_arg = sys.argv[1:]
+            # removes parameters used in vformat
+            for opt in ['-f', '-c']:
+                if opt in cmd_arg:
+                    index = cmd_arg.index(opt)
+                    if len(cmd_arg) > (index + 1):
+                        for i in range(2):
+                        cmd_arg.pop(index)
+            rc = self.shell.run(command + cmd_arg + vformat)
+        out = self.shell.stdout.getvalue()
+        return rc, out
