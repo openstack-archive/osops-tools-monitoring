@@ -1,0 +1,9 @@
+Code-Review+2: Simon Pasquier <spasquier@mirantis.com>
+Code-Review+1: Tom Fifield <tom@openstack.org>
+Workflow+1: Simon Pasquier <spasquier@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 27 Jul 2016 12:50:51 +0000
+Reviewed-on: https://review.openstack.org/341403
+Project: openstack/osops-tools-monitoring
+Branch: refs/heads/master
