@@ -213,20 +213,37 @@ class Novautils(object):
 
 def _check_cinder_volume():
     parser = argparse.ArgumentParser(
-        description='Check an OpenStack Keystone server.')
+        description='Check an OpenStack Keystone server.',conflict_handler='resolve')
+
     parser.add_argument('--auth_url', metavar='URL', type=str,
                         default=os.getenv('OS_AUTH_URL'),
-                        help='Keystone URL')
+                        help=argparse.SUPPRESS)
+
+    parser.add_argument('--os-auth-url', dest='auth_url', type=str,
+                        default=os.getenv('OS_AUTH_URL'),
+                        help='URL to use for the authetication service')
 
     parser.add_argument('--username', metavar='username', type=str,
+                        default=os.getenv('OS_USERNAME'),
+                        help=argparse.SUPPRESS)
+
+    parser.add_argument('--os-username',dest='username' ,type=str,
                         default=os.getenv('OS_USERNAME'),
                         help='username to use for authentication')
 
     parser.add_argument('--password', metavar='password', type=str,
                         default=os.getenv('OS_PASSWORD'),
+                        help=argparse.SUPPRESS)
+
+    parser.add_argument('--os-password', dest='password', type=str,
+                        default=os.getenv('OS_PASSWORD'),
                         help='password to use for authentication')
 
     parser.add_argument('--tenant', metavar='tenant', type=str,
+                        default=os.getenv('OS_TENANT_NAME'),
+                        help=argparse.SUPPRESS)
+
+    parser.add_argument('--os-tenant-name', dest='tenant', type=str,
                         default=os.getenv('OS_TENANT_NAME'),
                         help='tenant name to use for authentication')
 
@@ -235,14 +252,17 @@ def _check_cinder_volume():
 
     parser.add_argument('--endpoint_type', metavar='endpoint_type', type=str,
                         default="publicURL",
-                        help="""Endpoint type in the catalog request. """
-                             """Public by default.""")
+                        help=argparse.SUPPRESS)
+
+    parser.add_argument('--os-endpoint-type', dest='endpoint_type', type=str,
+                        default="publicURL",
+                        help='Endpoint type in the catalog request. '
+                        'Public by default.')
 
     parser.add_argument('--force_delete', action='store_true',
-                        help="""If matching volumes are found, delete """
-                             """them and add a notification in the """
-                             """message instead of getting out in """
-                             """critical state.""")
+                        help='If matching volumes are found, delete them and '
+                        'add a notification in the message instead of '
+                        'getting out in critical state.')
 
     parser.add_argument('--api_version', metavar='api_version', type=str,
                         default='1',
@@ -250,13 +270,17 @@ def _check_cinder_volume():
 
     parser.add_argument('--timeout', metavar='timeout', type=int,
                         default=120,
-                        help="""Max number of second to create/delete a """
-                             """volume (120 by default).""")
+			help=argparse.SUPPRESS)
+
+    parser.add_argument('--http-timeout', dest='timeout', type=int,
+                        default=120,
+                        help='Max number of second to create/delete a '
+                        'Volume (120 by default).')
 
     parser.add_argument('--volume_name', metavar='volume_name', type=str,
                         default="monitoring_test",
-                        help="""Name of the volume to create """
-                             """(monitoring_test by default)""")
+                        help='Name of the volume to create '
+                        '(monitoring_test by default)')
 
     parser.add_argument('--volume_size', metavar='volume_size', type=int,
                         default=1,
