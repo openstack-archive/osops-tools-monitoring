@@ -200,37 +200,66 @@ def _check_neutron_floating_ip():
         description='Check an Floating ip creation. Note that it is able '
                     + 'to delete *all* floating ips from a account, so '
                     + 'ensure that nothing important is running on the '
-                    + 'specified account.')
-    parser.add_argument('--auth_url', metavar='URL', type=str,
+                    + 'specified account.',
+                    conflict_handler='resolve')
+    parser.add_argument('--auth_url','--os-auth-url', metavar='URL', type=str,
                         default=os.getenv('OS_AUTH_URL'),
-                        help='Keystone URL')
+                        help='url to use for authetication (Deprecated)')
+ 
+    parser.add_argument('--os-auth-url', dest='auth_url', type=str,
+                        default=os.getenv('OS_AUTH_URL'),
+                        help='url to use for authetication')
 
-    parser.add_argument('--username', metavar='username', type=str,
+    parser.add_argument('--username','--os-username', metavar='username', type=str,
+                        default=os.getenv('OS_USERNAME'),
+                        help='username to use for authentication (Deprecated)')
+ 
+    parser.add_argument('--os-username',dest='username' ,type=str,
                         default=os.getenv('OS_USERNAME'),
                         help='username to use for authentication')
 
-    parser.add_argument('--password', metavar='password', type=str,
+    parser.add_argument('--password','--os-password', metavar='password', type=str,
+                        default=os.getenv('OS_PASSWORD'),
+                        help='password to use for authentication (Deprecated)')
+
+    parser.add_argument('--os-password', dest='password', type=str,
                         default=os.getenv('OS_PASSWORD'),
                         help='password to use for authentication')
 
-    parser.add_argument('--tenant', metavar='tenant', type=str,
+    parser.add_argument('--tenant','--os-tenant-name', metavar='tenant', type=str,
+                        default=os.getenv('OS_TENANT_NAME'),
+                        help='tenant name to use for authentication (Deprecated)')
+
+    parser.add_argument('--os-tenant-name', dest='tenant', type=str,
                         default=os.getenv('OS_TENANT_NAME'),
                         help='tenant name to use for authentication')
+
 
     parser.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
                         help='Override the catalog endpoint.')
 
-    parser.add_argument('--endpoint_type', metavar='endpoint_type', type=str,
+    parser.add_argument('--endpoint_type','--os-endpoint-type', metavar='endpoint_type', type=str,
+                        default="publicURL",
+                        help='Endpoint type in the catalog request. '
+                        + 'Public by default. (Deprecated)')
+
+    parser.add_argument('--os-enpdoint-type', dest='endpoint_type', type=str,
                         default="publicURL",
                         help='Endpoint type in the catalog request. '
                         + 'Public by default.')
+
 
     parser.add_argument('--force_delete', action='store_true',
                         help='If matching floating ip are found, delete them '
                         + 'and add a notification in the message instead of '
                         + 'getting out in critical state.')
 
-    parser.add_argument('--timeout', metavar='timeout', type=int,
+    parser.add_argument('--timeout','--http-timeout', metavar='timeout', type=int,
+                        default=120,
+                        help='Max number of second to create/delete a '
+                        + 'floating ip (120 by default). (Deprecated)')
+
+    parser.add_argument('--http-timeout', dest='timeout', type=int,
                         default=120,
                         help='Max number of second to create/delete a '
                         + 'floating ip (120 by default).')
