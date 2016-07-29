@@ -268,29 +268,51 @@ class Novautils(object):
 
 def _check_nova_instance():
     parser = argparse.ArgumentParser(
-        description='Check an OpenStack Keystone server.')
-    parser.add_argument('--auth_url', metavar='URL', type=str,
-                        default=os.getenv('OS_AUTH_URL'),
-                        help='Keystone URL')
+        description='Check an OpenStack Keystone server.',conflict_handler='resolve')
 
-    parser.add_argument('--username', metavar='username', type=str,
+    parser.add_argument('--auth_url','--os-auth-url', metavar='URL', type=str,
+                        default=os.getenv('OS_AUTH_URL'),
+                        help='url to use for authetication (Deprecated)')
+
+    parser.add_argument('--os-auth-url', dest='auth_url', type=str,
+                        default=os.getenv('OS_AUTH_URL'),
+                        help='url to use for authetication')
+
+    parser.add_argument('--username','--os-username', metavar='username', type=str,
+                        default=os.getenv('OS_USERNAME'),
+                        help='username to use for authentication (Deprecated)')
+
+    parser.add_argument('--os-username',dest='username' ,type=str,
                         default=os.getenv('OS_USERNAME'),
                         help='username to use for authentication')
 
-    parser.add_argument('--password', metavar='password', type=str,
+    parser.add_argument('--password','--os-password', metavar='password', type=str,
+                        default=os.getenv('OS_PASSWORD'),
+                        help='password to use for authentication (Deprecated)')
+
+    parser.add_argument('--os-password', dest='password', type=str,
                         default=os.getenv('OS_PASSWORD'),
                         help='password to use for authentication')
 
-    parser.add_argument('--tenant', metavar='tenant', type=str,
+    parser.add_argument('--tenant','--os-tenant-name', metavar='tenant', type=str,
+                        default=os.getenv('OS_TENANT_NAME'),
+                        help='tenant name to use for authentication (Deprecated)')
+
+    parser.add_argument('--os-tenant-name', dest='tenant', type=str,
                         default=os.getenv('OS_TENANT_NAME'),
                         help='tenant name to use for authentication')
 
     parser.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
                         help='Override the catalog endpoint.')
 
-    parser.add_argument('--endpoint_type', metavar='endpoint_type', type=str,
+    parser.add_argument('--endpoint_type','--os-endpoint-type', metavar='endpoint_type', type=str,
                         default="publicURL",
-                        help='Endpoint type in the catalog request.'
+                        help='Endpoint type in the catalog request. '
+                        + 'Public by default. (Deprecated)')
+
+    parser.add_argument('--os-endpoint-type', dest='endpoint_type', type=str,
+                        default="publicURL",
+                        help='Endpoint type in the catalog request. '
                         + 'Public by default.')
 
     parser.add_argument('--image_name', metavar='image_name', type=str,
