@@ -1,0 +1,8 @@
+Code-Review+2: Edgar Magana <emagana@gmail.com>
+Workflow+1: Kris Lindgren <klindgren@godaddy.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 01 Aug 2016 15:53:13 +0000
+Reviewed-on: https://review.openstack.org/348842
+Project: openstack/osops-tools-monitoring
+Branch: refs/heads/master
