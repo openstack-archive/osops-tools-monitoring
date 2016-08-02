@@ -25,11 +25,12 @@ def _check_keystone_api():
     keystone = utils.Keystone()
 
     def check_token():
-        return keystone.run().strip()
+        return keystone.run()
 
-    elapsed, token = utils.timeit(check_token)
-    if not token:
-        utils.critical("Unable to get a token")
+    elapsed, result = utils.timeit(check_token)
+    rc, out = result
+    if rc:
+        utils.critical("Unable to get a token:\n{0}".format(out))
 
     if elapsed > 10:
         utils.warning("Got a token after 10 seconds, it's too long."
