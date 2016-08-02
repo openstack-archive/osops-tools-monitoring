@@ -158,15 +158,15 @@ class Novautils(object):
                                  + "Won't create test floating ip. "
                                  + "Please check and delete.")
 
-    def get_network_id(self, router_name):
+    def get_network_id(self, ext_network_name):
         if not self.msgs:
             if not self.network_id:
                 try:
                     self.network_id = self.nova_client.list_networks(
-                        name=router_name, fields='id')['networks'][0]['id']
+                        name=ext_network_name, fields='id')['networks'][0]['id']
                 except Exception:
-                    self.msgs.append("Cannot find ext router named '%s'."
-                                     % router_name)
+                    self.msgs.append("Cannot find ext network named '%s'."
+                                     % ext_network_name)
 
     def create_floating_ip(self):
         if not self.msgs:
@@ -243,9 +243,9 @@ def _check_neutron_floating_ip():
                         + 'ip to be kept. Its default value prevents the '
                         + 'removal of any existing floating ip')
 
-    parser.add_argument('--ext_router_name', metavar='ext_router_name',
+    parser.add_argument('--ext_network_name', metavar='ext_network_name',
                         type=str, default='public',
-                        help='Name of the "public" router (public by default)')
+                        help='Name of the "public" external network (public by default)')
 
     parser.add_argument('--verbose', action='count',
                         help='Print requests on stderr.')
