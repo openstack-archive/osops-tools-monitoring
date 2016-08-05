@@ -166,6 +166,8 @@ class Glance(object):
             options.command = None
             self.glance.do_help(options)
             sys.exit(2)
+        # NOTE(cylopez) add argurment to have an authentification
+        options.func = True
         client = self.glance._get_versioned_client(api_version, options)
         return options, args, client
 
