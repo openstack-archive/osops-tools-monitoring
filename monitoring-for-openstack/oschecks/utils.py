@@ -74,10 +74,10 @@ def check_process_exists_and_amqp_connected(name):
         except psutil.NoSuchProcess:
             continue
         found_amqp = (
-            len(list(itertools.takewhile(lambda c: len(c.remote_address) <= 1
-                                         or c.remote_address[1]
-                                         != AMQP_PORT, connections)))
-            != len(connections))
+            len(list(itertools.takewhile(lambda c:
+                len(c.remote_address) <= 1 or
+                c.remote_address[1] != AMQP_PORT,
+                connections))) != len(connections))
         if found_amqp:
             ok("%s is working." % name)
     critical("%s is not connected to AMQP" % name)
@@ -255,7 +255,6 @@ class Keystone(object):
         self.shell.stdout = StringIO()
         self.shell.stderr = StringIO()
         self.help = False
-
 
     def run(self):
         command = ['token', 'issue']
