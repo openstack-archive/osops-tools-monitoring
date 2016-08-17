@@ -68,12 +68,12 @@ def mangle_url(orig_url, url):
     try:
         endpoint_url = urlparse.urlparse(url)
     except Exception as e:
-        utils.unknown("you must provide an endpoint_url in the form"
-                      + "<scheme>://<url>/ (%s)\n" % e)
+        utils.unknown("you must provide an endpoint_url in the form" +
+                      "<scheme>://<url>/ (%s)\n" % e)
     scheme = endpoint_url.scheme
     if scheme is None:
-        utils.unknown("you must provide an endpoint_url in the form"
-                      + "<scheme>://<url>/ (%s)\n" % e)
+        utils.unknown("you must provide an endpoint_url in the form" +
+                      "<scheme>://<url>/ (%s)\n" % e)
     catalog_url = urlparse.urlparse(orig_url)
 
     port = endpoint_url.port
@@ -114,8 +114,8 @@ class Novautils(object):
             dt = datetime.datetime.utcnow()
         td = dt - epoch
         # return td.total_seconds()
-        return int((td.microseconds + (td.seconds + td.days * 24 * 3600)
-                    * 10**6) / 1e6)
+        return int((td.microseconds +
+                   (td.seconds + td.days * 24 * 3600) * 10**6) / 1e6)
 
     def check_connection(self, force=False):
         if not self.connection_done or force:
@@ -149,14 +149,14 @@ class Novautils(object):
                 count += 1
         if count > 0:
             if delete:
-                self.notifications.append("Found %d ip(s): %s"
-                                          % (count, '{' + ', '.join(
-                                             found_ips) + '}'))
+                self.notifications.append("Found %d ip(s): %s" %
+                                          (count, '{' + ', '.join(
+                                           found_ips) + '}'))
             else:
-                self.msgs.append("Found %d ip(s): %s. "
-                                 % (count,  ', '.join(found_ips))
-                                 + "Won't create test floating ip. "
-                                 + "Please check and delete.")
+                self.msgs.append("Found %d ip(s): %s. " %
+                                 (count, ', '.join(found_ips)) +
+                                 "Won't create test floating ip. " +
+                                 "Please check and delete.")
 
     def get_network_id(self, router_name):
         if not self.msgs:
@@ -197,10 +197,10 @@ def fip_type(string):
 
 def _check_neutron_floating_ip():
     parser = argparse.ArgumentParser(
-        description='Check an Floating ip creation. Note that it is able '
-                    + 'to delete *all* floating ips from a account, so '
-                    + 'ensure that nothing important is running on the '
-                    + 'specified account.')
+        description="""Check an Floating ip creation. Note that it is """
+                    """able to delete *all* floating ips from a account, """
+                    """so ensure that nothing important is running on """
+                    """the specified account.""")
     parser.add_argument('--auth_url', metavar='URL', type=str,
                         default=os.getenv('OS_AUTH_URL'),
                         help='Keystone URL')
@@ -222,26 +222,28 @@ def _check_neutron_floating_ip():
 
     parser.add_argument('--endpoint_type', metavar='endpoint_type', type=str,
                         default="publicURL",
-                        help='Endpoint type in the catalog request. '
-                        + 'Public by default.')
+                        help="""Endpoint type in the catalog request. """
+                             """Public by default.""")
 
     parser.add_argument('--force_delete', action='store_true',
-                        help='If matching floating ip are found, delete them '
-                        + 'and add a notification in the message instead of '
-                        + 'getting out in critical state.')
+                        help="""If matching floating ip are found, delete """
+                             """them and add a notification in the message"""
+                             """ instead of getting out in critical """
+                             """state.""")
 
     parser.add_argument('--timeout', metavar='timeout', type=int,
                         default=120,
-                        help='Max number of second to create/delete a '
-                        + 'floating ip (120 by default).')
+                        help="""Max number of second to create/delete a """
+                             """floating ip (120 by default).""")
 
     parser.add_argument('--floating_ip', metavar='floating_ip', type=fip_type,
                         default=None,
-                        help='Regex of IP(s) to check for existance. '
-                        + 'This value can be "all" for conveniance (match '
-                        + 'all ip). This permit to avoid certain floating '
-                        + 'ip to be kept. Its default value prevents the '
-                        + 'removal of any existing floating ip')
+                        help="""Regex of IP(s) to check for existance. """
+                             """This value can be "all" for conveniance """
+                             """(match all ip). This permit to avoid """
+                             """certain floating ip to be kept. Its """
+                             """default value prevents the removal of """
+                             """any existing floating ip""")
 
     parser.add_argument('--ext_router_name', metavar='ext_router_name',
                         type=str, default='public',

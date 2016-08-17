@@ -88,8 +88,8 @@ class Novautils(object):
             dt = datetime.datetime.utcnow()
         td = dt - epoch
         # return td.total_seconds()
-        return int((td.microseconds + (td.seconds + td.days * 24 * 3600)
-                    * 10**6) / 1e6)
+        return int((td.microseconds +
+                   (td.seconds + td.days * 24 * 3600) * 10**6) / 1e6)
 
     def check_connection(self, force=False):
         if not self.connection_done or force:
@@ -108,12 +108,12 @@ class Novautils(object):
         try:
             endpoint_url = urllib.parse.urlparse(url)
         except Exception as e:
-            utils.unknown("you must provide an endpoint_url in the form"
-                          + "<scheme>://<url>/ (%s)\n" % e)
+            utils.unknown("you must provide an endpoint_url in the form" +
+                          "<scheme>://<url>/ (%s)\n" % e)
         scheme = endpoint_url.scheme
         if scheme is None:
-            utils.unknown("you must provide an endpoint_url in the form"
-                          + "<scheme>://<url>/ (%s)\n" % e)
+            utils.unknown("you must provide an endpoint_url in the form" +
+                          "<scheme>://<url>/ (%s)\n" % e)
         catalog_url = None
         try:
             catalog_url = urllib.parse.urlparse(
@@ -153,9 +153,10 @@ class Novautils(object):
                                           % (instance_name, count))
             else:
                 self.msgs.append(
-                    "Found '%s' present %d time(s). " % (instance_name, count)
-                    + "Won't create test instance. "
-                    + "Please check and delete.")
+                    "Found '%s' present %d time(s). " %
+                    (instance_name, count) +
+                    "Won't create test instance. " +
+                    "Please check and delete.")
 
     def get_image(self, image_name):
         if not self.msgs:
@@ -246,10 +247,9 @@ class Novautils(object):
             time.sleep(1)
             if timer >= timeout:
                 self.msgs.append(
-                    "Could not delete the vm %s within %d seconds "
-                    % (instance.name, timer)
-                    + "(created at %s)"
-                    % instance.created)
+                    "Could not delete the vm %s within %d seconds " %
+                    (instance.name, timer) + "(created at %s)" %
+                    instance.created)
                 break
             timer += 1
             try:
@@ -268,35 +268,39 @@ class Novautils(object):
 
 def _check_nova_instance():
     parser = argparse.ArgumentParser(
-        description='Check an OpenStack Keystone server.',conflict_handler='resolve')
+        description='Check an OpenStack Keystone server.',
+        conflict_handler='resolve')
 
-    parser.add_argument('--auth_url','--os-auth-url', metavar='URL', type=str,
-                        default=os.getenv('OS_AUTH_URL'),
+    parser.add_argument('--auth_url', '--os-auth-url', metavar='URL',
+                        type=str, default=os.getenv('OS_AUTH_URL'),
                         help='url to use for authetication (Deprecated)')
 
     parser.add_argument('--os-auth-url', dest='auth_url', type=str,
                         default=os.getenv('OS_AUTH_URL'),
                         help='url to use for authetication')
 
-    parser.add_argument('--username','--os-username', metavar='username', type=str,
-                        default=os.getenv('OS_USERNAME'),
-                        help='username to use for authentication (Deprecated)')
+    parser.add_argument('--username', '--os-username', metavar='username',
+                        type=str, default=os.getenv('OS_USERNAME'),
+                        help="""username to use for authentication"""
+                             """ (Deprecated)""")
 
-    parser.add_argument('--os-username',dest='username' ,type=str,
+    parser.add_argument('--os-username', dest='username', type=str,
                         default=os.getenv('OS_USERNAME'),
                         help='username to use for authentication')
 
-    parser.add_argument('--password','--os-password', metavar='password', type=str,
-                        default=os.getenv('OS_PASSWORD'),
-                        help='password to use for authentication (Deprecated)')
+    parser.add_argument('--password', '--os-password', metavar='password',
+                        type=str, default=os.getenv('OS_PASSWORD'),
+                        help="""password to use for authentication"""
+                             """ (Deprecated)""")
 
     parser.add_argument('--os-password', dest='password', type=str,
                         default=os.getenv('OS_PASSWORD'),
                         help='password to use for authentication')
 
-    parser.add_argument('--tenant','--os-tenant-name', metavar='tenant', type=str,
-                        default=os.getenv('OS_TENANT_NAME'),
-                        help='tenant name to use for authentication (Deprecated)')
+    parser.add_argument('--tenant', '--os-tenant-name', metavar='tenant',
+                        type=str, default=os.getenv('OS_TENANT_NAME'),
+                        help="""tenant name to use for authentication"""
+                             """ (Deprecated)""")
 
     parser.add_argument('--os-tenant-name', dest='tenant', type=str,
                         default=os.getenv('OS_TENANT_NAME'),
@@ -305,15 +309,16 @@ def _check_nova_instance():
     parser.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
                         help='Override the catalog endpoint.')
 
-    parser.add_argument('--endpoint_type','--os-endpoint-type', metavar='endpoint_type', type=str,
+    parser.add_argument('--endpoint_type', '--os-endpoint-type',
+                        metavar='endpoint_type', type=str,
                         default="publicURL",
-                        help='Endpoint type in the catalog request. '
-                        + 'Public by default. (Deprecated)')
+                        help="""Endpoint type in the catalog request. """
+                             """Public by default. (Deprecated)""")
 
     parser.add_argument('--os-endpoint-type', dest='endpoint_type', type=str,
                         default="publicURL",
-                        help='Endpoint type in the catalog request. '
-                        + 'Public by default.')
+                        help="""Endpoint type in the catalog request. """
+                             """Public by default.""")
 
     parser.add_argument('--image_name', metavar='image_name', type=str,
                         default=default_image_name,
@@ -331,9 +336,9 @@ def _check_nova_instance():
                         % default_instance_name)
 
     parser.add_argument('--force_delete', action='store_true',
-                        help='If matching instances are found delete them and '
-                        + 'add a notification in the message instead of '
-                        + 'getting out in critical state.')
+                        help="""If matching instances are found delete """
+                             """them and add a notification in the message"""
+                             """ instead of getting out in critical state.""")
 
     parser.add_argument('--api_version', metavar='api_version', type=str,
                         default='2',
@@ -341,13 +346,13 @@ def _check_nova_instance():
 
     parser.add_argument('--timeout', metavar='timeout', type=int,
                         default=120,
-                        help='Max number of second to create a instance'
-                        + '(120 by default)')
+                        help="""Max number of second to create a instance"""
+                             """ (120 by default)""")
 
-    parser.add_argument('--timeout_delete', metavar='timeout_delete', type=int,
-                        default=45,
-                        help='Max number of second to delete an existing '
-                        + 'instance (45 by default).')
+    parser.add_argument('--timeout_delete', metavar='timeout_delete',
+                        type=int, default=45,
+                        help="""Max number of second to delete an existing """
+                             """instance (45 by default).""")
 
     parser.add_argument('--insecure', action='store_true',
                         help="The server's cert will not be verified")
