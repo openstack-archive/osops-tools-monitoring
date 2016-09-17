@@ -106,11 +106,11 @@ class Novautils(object):
             endpoint_url = urlparse.urlparse(url)
         except Exception as e:
             utils.unknown("you must provide an endpoint_url in the form"
-                          + "<scheme>://<url>/ (%s)" % e)
+                          "<scheme>://<url>/ (%s)" % e)
         scheme = endpoint_url.scheme
         if scheme is None:
             utils.unknown("you must provide an endpoint_url in the form"
-                          + "<scheme>://<url>/ (%s)" % e)
+                          "<scheme>://<url>/ (%s)" % e)
         catalog_url = None
         try:
             catalog_url = urlparse.urlparse(
@@ -147,10 +147,10 @@ class Novautils(object):
                 self.notifications.append("Found '%s' present %d time(s)"
                                           % (volume_name, count))
             else:
-                self.msgs.append("Found '%s' present %d time(s). "
-                                 % (volume_name, count)
-                                 + "Won't create test volume. "
-                                 + "Please check and delete.")
+                self.msgs.append("Found '%s' present %d time(s). " %
+                                 (volume_name, count) +
+                                 "Won't create test volume. "
+                                 "Please check and delete.")
 
     def create_volume(self, volume_name, size, availability_zone, volume_type):
         if not self.msgs:
@@ -179,7 +179,7 @@ class Novautils(object):
                     self.volume.get()
                 except Exception as e:
                     self.msgs.append("Problem getting the status of "
-                                     + "the volume: %s" % e)
+                                     "the volume: %s" % e)
                     break
 
     def delete_volume(self):
@@ -195,8 +195,8 @@ class Novautils(object):
         while not deleted and not self.msgs:
             time.sleep(1)
             if timer >= timeout:
-                self.msgs.append("Could not delete the volume within"
-                                 + "%d seconds" % timer)
+                self.msgs.append("Could not delete the volume within "
+                                 "%d seconds" % timer)
                 break
             timer += 1
             try:
@@ -232,13 +232,14 @@ def _check_cinder_volume():
 
     parser.add_argument('--endpoint_type', metavar='endpoint_type', type=str,
                         default="publicURL",
-                        help='Endpoint type in the catalog request. '
-                        + 'Public by default.')
+                        help="""Endpoint type in the catalog request. """
+                             """Public by default.""")
 
     parser.add_argument('--force_delete', action='store_true',
-                        help='If matching volumes are found, delete them and '
-                        + 'add a notification in the message instead of '
-                        + 'getting out in critical state.')
+                        help="""If matching volumes are found, delete """
+                             """them and add a notification in the """
+                             """message instead of getting out in """
+                             """critical state.""")
 
     parser.add_argument('--api_version', metavar='api_version', type=str,
                         default='1',
@@ -246,13 +247,13 @@ def _check_cinder_volume():
 
     parser.add_argument('--timeout', metavar='timeout', type=int,
                         default=120,
-                        help='Max number of second to create/delete a volume '
-                        + '(120 by default).')
+                        help="""Max number of second to create/delete a """
+                             """volume (120 by default).""")
 
     parser.add_argument('--volume_name', metavar='volume_name', type=str,
                         default="monitoring_test",
-                        help='Name of the volume to create '
-                        + '(monitoring_test by default)')
+                        help="""Name of the volume to create """
+                             """(monitoring_test by default)""")
 
     parser.add_argument('--volume_size', metavar='volume_size', type=int,
                         default=1,
