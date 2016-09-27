@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- encoding: utf-8 -*-
+
 # Openstack Monitoring script for Sensu / Nagios
 #
 # Copyright © 2012-2014 eNovance <licensing@enovance.com>
