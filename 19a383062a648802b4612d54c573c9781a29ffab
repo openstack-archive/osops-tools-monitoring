@@ -1,0 +1,10 @@
+Code-Review+1: Matthias Runge <mrunge@redhat.com>
+Code-Review+2: Joseph Bajin <jbajin@verisign.com>
+Code-Review+1: Tom Fifield <tom@openstack.org>
+Workflow+1: Joseph Bajin <jbajin@verisign.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Sun, 30 Oct 2016 03:37:33 +0000
+Reviewed-on: https://review.openstack.org/377641
+Project: openstack/osops-tools-monitoring
+Branch: refs/heads/master
