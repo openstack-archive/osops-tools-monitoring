@@ -189,7 +189,7 @@ class Ceilometer(object):
             self.base_argv)
         if options.help:
             options.command = None
-            self.do_help(options)
+            self.ceilometer.do_help(options)
             sys.exit(2)
         client_kwargs = vars(options)
         return options, client.get_client(api_version, **client_kwargs)

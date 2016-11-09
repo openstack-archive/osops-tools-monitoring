@@ -18,7 +18,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import json
+import re
+
 from oschecks import utils
+from ceilometerclient.openstack.common.apiclient import exceptions
 
 
 def _check_ceilometer_api():
@@ -29,7 +33,15 @@ def _check_ceilometer_api():
                             help='Critical timeout for Ceilometer APIs calls')
     options, client = ceilometer.setup()
 
-    elapsed, meters = utils.timeit(client.meters.list)
+    def meters_list():
+        try:
+            result = client.meters.list()
+        except exceptions.Gone as ex:
+            msg = json.loads(ex.response.content)
+            utils.warning(re.sub(r'\s\s*', ' ', msg['error_message']))
+        return result
+
+    elapsed, meters = utils.timeit(meters_list)
     if not meters:
         utils.critical("Unable to contact Ceilometer API.")
 
