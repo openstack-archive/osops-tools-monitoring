@@ -40,7 +40,10 @@ def _check_nova_api():
     options, args, client = nova.setup()
 
     def flavors_list():
-        return list(client.flavors.list())
+        try:
+            return list(client.flavors.list())
+        except Exception as ex:
+            utils.critical(str(ex))
 
     elapsed, flavors = utils.timeit(flavors_list)
     if not flavors:

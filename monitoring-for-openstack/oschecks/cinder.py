@@ -39,7 +39,10 @@ def _check_cinder_api():
     options, args, client = cinder.setup()
 
     def quotas_list():
-        return client.quotas.get(options.os_tenant_name)
+        try:
+            return client.quotas.get(options.os_tenant_name)
+        except Exception as ex:
+            utils.critical(str(ex))
 
     elapsed, quotas = utils.timeit(quotas_list)
     if not quotas:

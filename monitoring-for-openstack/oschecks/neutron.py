@@ -39,7 +39,13 @@ def _check_neutron_api():
                          help='Critical timeout for neutron APIs calls')
     options, args, client = neutron.setup()
 
-    elapsed, networks = utils.timeit(client.list_networks)
+    def network_list():
+        try:
+            return client.list_networks()
+        except Exception as ex:
+            utils.critical(str(ex))
+
+    elapsed, networks = utils.timeit(network_list)
     if not networks or len(networks.get('networks', [])) <= 0:
         utils.critical("Unable to contact neutron API.")
 

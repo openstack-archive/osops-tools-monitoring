@@ -30,7 +30,10 @@ def _check_glance_api():
     options, args, client = glance.setup()
 
     def images_list():
-        return list(client.images.list())
+        try:
+            return list(client.images.list())
+        except Exception as ex:
+            utils.critical(str(ex))
 
     elapsed, images = utils.timeit(images_list)
     if not images:

@@ -35,11 +35,12 @@ def _check_ceilometer_api():
 
     def meters_list():
         try:
-            result = client.meters.list()
+            return client.meters.list()
         except exceptions.Gone as ex:
             msg = json.loads(ex.response.content)
             utils.warning(re.sub(r'\s\s*', ' ', msg['error_message']))
-        return result
+        except Exception as ex:
+            utils.critical(str(ex))
 
     elapsed, meters = utils.timeit(meters_list)
     if not meters:

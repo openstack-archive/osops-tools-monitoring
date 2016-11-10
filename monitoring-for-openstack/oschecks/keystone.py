@@ -25,7 +25,10 @@ def _check_keystone_api():
     keystone = utils.Keystone()
 
     def check_token():
-        return keystone.run()
+        try:
+            return keystone.run()
+        except Exception as ex:
+            utils.critical(str(ex))
 
     elapsed, result = utils.timeit(check_token)
     rc, out = result
