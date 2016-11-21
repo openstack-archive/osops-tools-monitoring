@@ -81,7 +81,12 @@ def check_ceph_df():
     'Program entry point.'
 
     try:
-        res = subprocess.check_output(["ceph", "df", "--format=json"],
+        ceph_args = ["ceph", "df", "--format=json"]
+        if len(sys.argv) >= 4:
+            ceph_args.append('-n')
+            ceph_args.append(sys.argv[3])
+
+        res = subprocess.check_output(ceph_args,
                                       stderr=subprocess.STDOUT)
         exit_code, message = interpret_output_df(res)
         sys.stdout.write("%s\n" % message)
@@ -119,7 +124,12 @@ def check_ceph_health():
     'Program entry point.'
 
     try:
-        res = subprocess.check_output(["ceph", "health"],
+        ceph_args = ["ceph", "health"]
+        if len(sys.argv) >= 2:
+            ceph_args.append('-n')
+            ceph_args.append(sys.argv[1])
+
+        res = subprocess.check_output(ceph_args,
                                       stderr=subprocess.STDOUT)
         exit_code, message = interpret_output_health(res)
         sys.stdout.write(message)
