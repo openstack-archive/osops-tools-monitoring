@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # Openstack Monitoring script for Sensu / Nagios
 #
@@ -124,4 +125,3 @@ def _pacemaker_host_check():
 
 def pacemaker_host_check():
     utils.safe_run(_pacemaker_host_check)
-
