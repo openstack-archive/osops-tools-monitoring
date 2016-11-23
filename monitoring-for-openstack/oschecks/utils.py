@@ -130,26 +130,29 @@ class Nova(object):
             sys.exit(2)
         auth_token = getattr(args, 'os_token', None)
         api_version = '2.1'
-        nova_client = Client(
-            api_version,
-            options.os_username,
-            options.os_password,
-            getattr(
-                options, 'os_project_name', getattr(
-                    options, 'os_tenant_name', None
-                )
-            ),
-            tenant_id=getattr(
-                options, 'os_project_id', getattr(
-                    options, 'os_tenant_id', None
-                )
-            ),
-            auth_token=auth_token,
-            auth_url=options.os_auth_url,
-            region_name=options.os_region_name,
-            cacert=options.os_cacert,
-            insecure=options.insecure,
-            timeout=options.timeout)
+        try:
+            nova_client = Client(
+                api_version,
+                options.os_username,
+                options.os_password,
+                getattr(
+                    options, 'os_project_name', getattr(
+                        options, 'os_tenant_name', None
+                    )
+                ),
+                tenant_id=getattr(
+                    options, 'os_project_id', getattr(
+                        options, 'os_tenant_id', None
+                    )
+                ),
+                auth_token=auth_token,
+                auth_url=options.os_auth_url,
+                region_name=options.os_region_name,
+                cacert=options.os_cacert,
+                insecure=options.insecure,
+                timeout=options.timeout)
+        except Exception as ex:
+            critical(ex)
         return options, args, nova_client
 
 
@@ -167,7 +170,10 @@ class Glance(object):
             options.command = None
             self.glance.do_help(options)
             sys.exit(2)
-        client = self.glance._get_versioned_client(api_version, options)
+        try:
+            client = self.glance._get_versioned_client(api_version, options)
+        except Exception as ex:
+            critical(ex)
         return options, args, client
 
 
@@ -193,7 +199,10 @@ class Ceilometer(object):
             self.ceilometer.do_help(options)
             sys.exit(2)
         client_kwargs = vars(options)
-        return options, client.get_client(api_version, **client_kwargs)
+        try:
+            return options, client.get_client(api_version, **client_kwargs)
+        except Exception as ex:
+            critical(ex)
 
 
 class Cinder(object):
@@ -213,15 +222,18 @@ class Cinder(object):
             sys.exit(2)
         if options.os_volume_api_version:
             api_version = options.os_volume_api_version
-        client = client.get_client_class(api_version)(
-            options.os_username,
-            options.os_password,
-            options.os_tenant_name,
-            tenant_id=options.os_tenant_id,
-            auth_url=options.os_auth_url,
-            region_name=options.os_region_name,
-            cacert=options.os_cacert,
-            insecure=options.insecure)
+        try:
+            client = client.get_client_class(api_version)(
+                options.os_username,
+                options.os_password,
+                options.os_tenant_name,
+                tenant_id=options.os_tenant_id,
+                auth_url=options.os_auth_url,
+                region_name=options.os_region_name,
+                cacert=options.os_cacert,
+                insecure=options.insecure)
+        except Exception as ex:
+            critical(ex)
         return options, args, client
 
 
@@ -238,7 +250,10 @@ class Neutron(object):
         (options, args) = self.neutron.parser.parse_known_args(self.base_argv)
         self.neutron.options = options
         self.neutron.api_version = {'network': self.neutron.api_version}
-        self.neutron.authenticate_user()
+        try:
+            self.neutron.authenticate_user()
+        except Exception as ex:
+            critical(ex)
         return options, args, self.neutron.client_manager.neutron
 
 
