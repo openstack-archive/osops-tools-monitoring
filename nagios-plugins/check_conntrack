@@ -1,0 +1,232 @@
+#!/usr/bin/env python
+"""
+Connection Tracking Check
+
+Monitors connections in all network namespaces.  Warns when the connection
+tracking table is close to exhaustion and also reports on the main offenders
+in order to pin point possible denial of service attacks.
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+import xml.etree.cElementTree as et
+
+
+NAGIOS_OK = 0
+NAGIOS_WARNING = 1
+NAGIOS_CRITICAL = 2
+NAGIOS_UNKNOWN = 3
+
+
+def nf_conntrack_max():
+    """Returns the maximum conntrack table size"""
+
+    with open('/proc/sys/net/netfilter/nf_conntrack_max', 'r') as temp:
+        return int(temp.read())
+
+
+def netns_list():
+    """Returns a list of network namespaces"""
+
+    output = subprocess.check_output(['ip', 'netns'])
+    return output.split("\n")[:-1]
+
+
+def conntrack(namespace=None):
+    """Returns conntrack table globally or for a specific namespace"""
+
+    # pylint: disable=line-too-long
+
+    command = []
+    if namespace:
+        command += ['ip', 'netns', 'exec', namespace]
+    command += ['conntrack', '-L', '-o', 'xml']
+
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, _ = process.communicate()
+
+    if process.returncode != 0:
+        raise RuntimeError('call to conntrack failed')
+
+    # Welcome to XM-hell
+    try:
+        root = et.fromstring(output)
+    except et.ParseError:
+        return None
+
+    # The root element is 'conntrack', each child is an individual flow
+    flows = []
+    for flow in root:
+        # Create empty dictionaries to populate
+        data = {
+            'original': {
+                'layer3': {},
+                'layer4': {},
+            },
+            'reply': {
+                'layer3': {},
+                'layer4': {},
+            },
+            'independent': {}
+        }
+        # Parse the DOM
+        for meta in flow:
+            direction = meta.attrib['direction']
+            if direction in ['original', 'reply']:
+                for layer in meta:
+                    data[direction][layer.tag]['protocol'] = layer.attrib['protoname']
+                    for thing in layer:
+                        data[direction][layer.tag][thing.tag] = thing.text
+            elif direction == 'independent':
+                for thing in meta:
+                    data[direction][thing.tag] = thing.text
+            else:
+                raise RuntimeError('unexpected meta tag "{}"'.format(direction))
+
+        flows.append(data)
+
+    return flows
+
+
+def conntrack_gather():
+    """Gathers connection tracking statistics"""
+
+    flows = {}
+    temp = conntrack()
+    if temp:
+        flows['global'] = temp
+
+    namespaces = netns_list()
+    for namespace in namespaces:
+        temp = conntrack(namespace)
+        if temp:
+            flows[namespace] = temp
+
+    return flows
+
+
+def print_offender_detail(flows, offender):
+    """Apply some analysis smarts to an offender"""
+
+    # pylint: disable=line-too-long,too-many-branches
+
+    total = len(flows[offender])
+
+    # Count occurences of L3 and L4 values
+    original_src = {}
+    original_dst = {}
+    original_sport = {}
+    original_dport = {}
+
+    for flow in flows[offender]:
+        src = flow['original']['layer3']['src']
+        try:
+            original_src[src] = original_src[src] + 1
+        except KeyError:
+            original_src[src] = 1
+
+        dst = flow['original']['layer3']['dst']
+        try:
+            original_dst[dst] = original_dst[dst] + 1
+        except KeyError:
+            original_dst[dst] = 1
+
+        # Ensure the key exists first, we may have not seen a response
+        # from the remote yet
+        try:
+            sport = flow['original']['layer4']['sport']
+        except KeyError:
+            pass
+        else:
+            try:
+                original_sport[sport] = original_sport[sport] + 1
+            except KeyError:
+                original_sport[sport] = 1
+
+        try:
+            dport = flow['original']['layer4']['dport']
+        except KeyError:
+            pass
+        else:
+            try:
+                original_dport[dport] = original_dport[dport] + 1
+            except KeyError:
+                original_dport[dport] = 1
+
+    # Print out any values we deem to be significant
+    print '{:11} {}'.format(total, offender)
+    for offence in sorted(original_src, key=lambda x: original_src[x], reverse=True):
+        if original_src[offence] > (total / 10):
+            print '{}{:2.0f}% of flows are from address {}'.format(
+                ' ' * 12, (float(original_src[offence]) * 100) / total, offence)
+    for offence in sorted(original_dst, key=lambda x: original_dst[x], reverse=True):
+        if original_dst[offence] > (total / 10):
+            print '{}{:2.0f}% of flows are to address {}'.format(
+                ' ' * 12, (float(original_dst[offence]) * 100) / total, offence)
+    for offence in sorted(original_sport, key=lambda x: original_sport[x], reverse=True):
+        if original_sport[offence] > (total / 10):
+            print '{}{:2.0f}% of flows are from port {}'.format(
+                ' ' * 12, (float(original_sport[offence]) * 100) / total, offence)
+    for offence in sorted(original_dport, key=lambda x: original_dport[x], reverse=True):
+        if original_dport[offence] > (total / 10):
+            print '{}{:2.0f}% of flows are to port {}'.format(
+                ' ' * 12, (float(original_dport[offence]) * 100) / total, offence)
+
+
+def parse_threshold(threshold, conntrack_max):
+    """Parses a threshold and returns the integral value for checking"""
+
+    if threshold[-1] == '%':
+        return (conntrack_max * int(threshold[:-1])) / 100
+
+    return int(threshold)
+
+
+def main():
+    """Main entry point"""
+
+    if os.getuid() != 0:
+        raise RuntimeError('must be run as root')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-w', '--warning', default='80%')
+    parser.add_argument('-c', '--critical', default='90%')
+    args = parser.parse_args()
+
+    max_flows = nf_conntrack_max()
+    warn = parse_threshold(args.warning, max_flows)
+    crit = parse_threshold(args.critical, max_flows)
+
+    flows = conntrack_gather()
+
+    total_flows = reduce(lambda x, y: x + len(flows[y]), flows, 0)
+
+    code = NAGIOS_OK
+    if total_flows >= warn:
+        code = NAGIOS_WARNING
+    if total_flows >= crit:
+        code = NAGIOS_CRITICAL
+
+    status = ['OK', 'WARNING', 'CRITICAL', 'UNKNOWN'][code]
+    print ('{status}: flows={total_flows} max_flows={max_flows} | '
+           'flows={total_flows};{warn};{crit};0;{max_flows}').\
+          format(status=status, total_flows=total_flows, max_flows=max_flows,
+                 warn=warn, crit=crit)
+
+    # Dump out detailed analysis of offenders we deem to be significant
+    offenders = sorted(flows, key=lambda x: len(flows[x]), reverse=True)
+    for offender in offenders:
+        # Discard non-interesting flow tables
+        if len(flows[offender]) < (max_flows / 10):
+            break
+        print_offender_detail(flows, offender)
+
+    sys.exit(code)
+
+
+if __name__ == '__main__':
+    main()
+
+# vi: ts=4 et:
