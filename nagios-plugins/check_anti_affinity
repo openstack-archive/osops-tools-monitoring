@@ -1,0 +1,146 @@
+#!/usr/bin/env python
+"""
+Polls the nova API to detect instances where servers are in violation of
+nova-scheduler anti-affinity hints.
+"""
+
+# pylint: disable=import-error
+
+import sys
+import time
+import argparse
+
+from keystoneauth1 import session
+from keystoneclient.auth.identity import v3
+from novaclient import client
+import prettytable
+
+
+NAGIOS_OK = 0
+NAGIOS_WARNING = 1
+NAGIOS_CRITICAL = 2
+NAGIOS_UNKNOWN = 3
+
+
+def get_anti_affinity_violations(nova):
+    """
+    Returns a hash mapping server groups, which are in violation of anti-
+    affinity rules, to hashes of hypervistors which map to lists of affected
+    servers
+    """
+
+    violations = {}
+
+    # Work through each server group
+    server_groups = nova.server_groups.list(all_projects=True)
+    for server_group in server_groups:
+
+        # Reject server groups without an anti-affinity policy
+        server_group_detail = nova.server_groups.get(server_group.id)
+        if 'anti-affinity' not in server_group_detail.policies:
+            continue
+
+        # And reject server groups without an members
+        server_group_members = server_group_detail.members
+        if not server_group_members:
+            continue
+
+        # Iterate over all servers in the server group, building a hash
+        # mapping hypervisors to a list of servers
+        hypervisors = {}
+        for server_id in server_group_members:
+            server = nova.servers.get(server_id)
+            hypervisor = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname')
+            if hypervisor not in hypervisors:
+                hypervisors[hypervisor] = []
+            hypervisors[hypervisor].append(server)
+
+        # Reject hypervisors which do not have multiple servers on them
+        hypervisors = {k: v for k, v in hypervisors.items() if len(v) > 1}
+
+        # Reject server groups which don't have any over hypervisors hosting
+        # more than one server
+        if not hypervisors:
+            continue
+
+        # Finally accumulate the anti-affinity violations failures for this
+        # server group
+        violations[server_group.id] = hypervisors
+
+    return violations
+
+
+def print_anti_affinity_violations(volations):
+    """
+    Print a formatted table of anti-affinity violations
+    """
+
+    # Setup the table output
+    table = prettytable.PrettyTable(['Server Group', 'Hypervisor', 'Server'])
+    table.align = 'l'
+
+    # Iterate through server groups, hypervisors violating anti-affinity
+    # rules and the servers hosted on them.  Keep track of whether we have
+    # printed out the server group or hypervisor already.  This kees the
+    # output simple to parse for the human eye
+    for server_group, hypervisors in volations.items():
+        printed_server = False
+        for hypervisor, servers in hypervisors.items():
+            printed_hypervisor = False
+            for server in servers:
+                table.add_row(['' if printed_server else server_group,
+                               '' if printed_hypervisor else hypervisor,
+                               server.id])
+                printed_server = printed_hypervisor = True
+
+    print table
+
+
+def main():
+    """
+    Parses arguments, creates a client to Nova, checks for any server groups
+    which are in violation of anti-affinity hints dumping them out if any
+    are detected
+    """
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--username', required=True)
+    parser.add_argument('-p', '--password', required=True)
+    parser.add_argument('-P', '--project', required=True)
+    parser.add_argument('-H', '--host', required=True)
+    parser.add_argument('-d', '--domain', default='Default')
+    args = parser.parse_args()
+
+    auth = v3.Password(user_domain_name=args.domain,
+                       username=args.username,
+                       password=args.password,
+                       project_domain_name=args.domain,
+                       project_name=args.project,
+                       auth_url=args.host)
+    sess = session.Session(auth=auth)
+
+    nova = client.Client(2, session=sess)
+
+    start = time.time()
+    violations = get_anti_affinity_violations(nova)
+    delta = time.time() - start
+
+    code = NAGIOS_OK
+    if violations:
+        code = NAGIOS_WARNING
+
+    status = ['OK', 'WARNING', 'CRITICAL', 'UNKNOWN'][code]
+    print ('{0}: {1} anti-affinity violations detected | '
+           'violations={1} time={2:.2f}s').\
+          format(status, len(violations), delta)
+
+    if violations:
+        print_anti_affinity_violations(violations)
+
+    sys.exit(code)
+
+
+if __name__ == "__main__":
+    main()
+
+# vi: ts=4 et:
