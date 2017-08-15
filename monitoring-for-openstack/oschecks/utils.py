@@ -120,7 +120,7 @@ class Nova(object):
         self.nova.parser = self.nova.get_base_parser(self.base_argv)
         self.add_argument = self.nova.parser.add_argument
 
-    def setup(self):
+    def setup(self, api_version='2.1'):
         from novaclient.client import Client
         (options, args) = self.nova.parser.parse_known_args(self.base_argv)
         if options.help:
@@ -128,18 +128,21 @@ class Nova(object):
             self.nova.do_help(options)
             sys.exit(2)
         auth_token = getattr(args, 'os_token', None)
-        api_version = '2.1'
+        api_version = (
+            getattr(options, 'os_compute_api_version', api_version) or
+            api_version
+        )
         try:
             nova_client = Client(
                 api_version,
-                options.os_username,
-                options.os_password,
-                getattr(
+                username=options.os_username,
+                password=options.os_password,
+                project_name=getattr(
                     options, 'os_project_name', getattr(
                         options, 'os_tenant_name', None
                     )
                 ),
-                tenant_id=getattr(
+                project_id=getattr(
                     options, 'os_project_id', getattr(
                         options, 'os_tenant_id', None
                     )
