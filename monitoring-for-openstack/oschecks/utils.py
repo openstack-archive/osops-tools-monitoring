@@ -160,15 +160,19 @@ class Glance(object):
         from glanceclient import shell
         self.glance = shell.OpenStackImagesShell()
         self.base_argv = copy.deepcopy(sys.argv[1:])
-        self.glance.parser = self.glance.get_base_parser()
+        self.glance.parser = self.glance.get_base_parser(sys.argv)
         self.add_argument = self.glance.parser.add_argument
 
-    def setup(self, api_version=1):
+    def setup(self, api_version=2):
         (options, args) = self.glance.parser.parse_known_args(self.base_argv)
         if options.help:
             options.command = None
             self.glance.do_help(options)
             sys.exit(2)
+        api_version = (
+            getattr(options, 'os_image_api_version', api_version) or
+            api_version
+        )
         try:
             client = self.glance._get_versioned_client(api_version, options)
         except Exception as ex:
