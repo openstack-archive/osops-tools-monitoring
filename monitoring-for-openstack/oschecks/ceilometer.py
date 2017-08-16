@@ -22,7 +22,7 @@ import json
 import re
 
 from oschecks import utils
-from ceilometerclient.openstack.common.apiclient import exceptions
+from ceilometerclient import exc
 
 
 def _check_ceilometer_api():
@@ -36,11 +36,12 @@ def _check_ceilometer_api():
     def meters_list():
         try:
             return client.meters.list()
-        except exceptions.Gone as ex:
-            msg = json.loads(ex.response.content)
-            utils.warning(re.sub(r'\s\s*', ' ', msg['error_message']))
+        except exc.HTTPNotFound as ex:
+            utils.warning('Did not find Ceilometer API running '
+                          'on given endpoint')
         except Exception as ex:
             utils.critical(str(ex))
+
 
     elapsed, meters = utils.timeit(meters_list)
     if not meters:
