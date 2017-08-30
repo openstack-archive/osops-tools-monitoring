@@ -1,0 +1,8 @@
+Code-Review+2: Edgar Magana <emagana@gmail.com>
+Workflow+1: Edgar Magana <emagana@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 30 Aug 2017 15:28:26 +0000
+Reviewed-on: https://review.openstack.org/494207
+Project: openstack/osops-tools-monitoring
+Branch: refs/heads/master
