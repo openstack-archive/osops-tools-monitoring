@@ -62,8 +62,10 @@ def _check_resource_in_host(remaining, match_word, options, local_hostname):
         for host in host_list:
             if host == local_hostname:
                 _ok_run_script(options)
-        utils.ok("pacemaker resource %s doesn't on this node "
-                         "(but on %s)" % (resource, patterns.group(2)))
+        utils.ok(
+            "pacemaker resource %s doesn't run on this node "
+            "(but on %s)" % (options.pacemaker_resource, patterns.group(2))
+        )
 
 def _pacemaker_host_check():
     parser = argparse.ArgumentParser(
