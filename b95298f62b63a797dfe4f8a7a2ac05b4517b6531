@@ -1,0 +1,9 @@
+Code-Review+2: Melvin Hillsman (mrhillsman) <mrhillsman@gmail.com>
+Workflow+1: Edgar Magana <emagana@gmail.com>
+Code-Review+2: Edgar Magana <emagana@gmail.com>
+Verified+2: Zuul
+Submitted-by: Zuul
+Submitted-at: Fri, 27 Oct 2017 22:56:54 +0000
+Reviewed-on: https://review.openstack.org/515004
+Project: openstack/osops-tools-monitoring
+Branch: refs/heads/master
