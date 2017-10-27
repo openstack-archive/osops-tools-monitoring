@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # monitoring-for-openstack documentation build configuration file, created by
 # sphinx-quickstart on Tue Oct 28 18:03:41 2014.
 #

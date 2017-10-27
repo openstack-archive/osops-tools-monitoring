@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # Copyright (C) 2014 eNovance SAS <licensing@enovance.com>
 #
 # Author: Julien Danjou <julien@danjou.info>
