@@ -68,41 +68,11 @@ def check_neutron_api():
     utils.safe_run(_check_neutron_api)
 
 
-DAEMON_DEFAULT_PORT = 9696
+class NeutronUtils(object):
+    DAEMON_DEFAULT_PORT = 9696
 
-
-def mangle_url(orig_url, url):
-    try:
-        endpoint_url = urlparse.urlparse(url)
-    except Exception as e:
-        utils.unknown("you must provide an endpoint_url in the form"
-                      "<scheme>://<url>/ (%s)\n" % e)
-    scheme = endpoint_url.scheme
-    if scheme is None:
-        utils.unknown("you must provide an endpoint_url in the form"
-                      "<scheme>://<url>/ (%s)\n" % e)
-    catalog_url = urlparse.urlparse(orig_url)
-
-    port = endpoint_url.port
-    if port is None:
-        if catalog_url.port is None:
-            port = DAEMON_DEFAULT_PORT
-        else:
-            port = catalog_url.port
-
-    netloc = "%s:%i" % (endpoint_url.hostname, port)
-    url = urlparse.urlunparse([scheme,
-                               netloc,
-                               catalog_url.path,
-                               catalog_url.params,
-                               catalog_url.query,
-                               catalog_url.fragment])
-    return url
-
-
-class Novautils(object):
-    def __init__(self, nova_client, tenant_id):
-        self.nova_client = nova_client
+    def __init__(self, client, tenant_id):
+        self.client = client
         self.msgs = []
         self.start = self.totimestamp()
         self.notifications = ["floatingip_creation_time=%s" % self.start]
@@ -128,16 +98,53 @@ class Novautils(object):
         if not self.connection_done or force:
             try:
                 # force a connection to the server
-                self.connection_done = self.nova_client.list_ports()
+                self.connection_done = self.client.list_ports()
             except Exception as e:
                 utils.critical("Cannot connect to neutron: %s\n" % e)
+
+    def mangle_url(self, url):
+        # This first connection populate the structure we need inside
+        # the object.  This does not cost anything if a connection has
+        # already been made.
+        self.check_connection()
+        try:
+            endpoint_url = urlparse.urlparse(url)
+        except Exception as e:
+            utils.unknown("you must provide an endpoint_url in the form"
+                          "<scheme>://<url>/ (%s)" % e)
+        scheme = endpoint_url.scheme
+        if scheme is None:
+            utils.unknown("you must provide an endpoint_url in the form"
+                          "<scheme>://<url>/ (%s)" % e)
+        catalog_url = None
+        try:
+            catalog_url = urlparse.urlparse(
+                self.client.httpclient.endpoint_url)
+        except Exception as e:
+            utils.unknown("unknown error parsing the catalog url : %s" % e)
+
+        port = endpoint_url.port
+        if port is None:
+            if catalog_url.port is None:
+                port = self.DAEMON_DEFAULT_PORT
+            else:
+                port = catalog_url.port
+
+        netloc = "%s:%i" % (endpoint_url.hostname, port)
+        url = urlparse.urlunparse([scheme,
+                                   netloc,
+                                   catalog_url.path,
+                                   catalog_url.params,
+                                   catalog_url.query,
+                                   catalog_url.fragment])
+        self.client.httpclient.endpoint_override = url
 
     def get_duration(self):
         return self.totimestamp() - self.start
 
     def list_floating_ips(self):
         if not self.all_floating_ips:
-            for floating_ip in self.nova_client.list_floatingips(
+            for floating_ip in self.client.list_floatingips(
                     fields=['floating_ip_address', 'id'],
                     tenant_id=self.tenant_id)['floatingips']:
                 self.all_floating_ips.append(floating_ip)
@@ -151,7 +158,7 @@ class Novautils(object):
                     ip['floating_ip_address']):
                 if delete:
                     # asynchronous call, we do not check that it worked
-                    self.nova_client.delete_floatingip(ip['id'])
+                    self.client.delete_floatingip(ip['id'])
                 found_ips.append(ip['floating_ip_address'])
                 count += 1
         if count > 0:
@@ -169,7 +176,7 @@ class Novautils(object):
         if not self.msgs:
             if not self.network_id:
                 try:
-                    self.network_id = self.nova_client.list_networks(
+                    self.network_id = self.client.list_networks(
                         name=ext_network_name, fields='id')['networks'][0]['id']
                 except Exception:
                     self.msgs.append("Cannot find ext network named '%s'."
@@ -179,7 +186,7 @@ class Novautils(object):
         if not self.msgs:
             try:
                 body = {'floatingip': {'floating_network_id': self.network_id}}
-                self.fip = self.nova_client.create_floatingip(body=body)
+                self.fip = self.client.create_floatingip(body=body)
                 self.notifications.append(
                     "fip=%s" % self.fip['floatingip']['floating_ip_address'])
             except Exception as e:
@@ -188,7 +195,7 @@ class Novautils(object):
     def delete_floating_ip(self):
         if not self.msgs:
             try:
-                self.nova_client.delete_floatingip(
+                self.client.delete_floatingip(
                     self.fip['floatingip']['id'])
             except Exception:
                 self.msgs.append("Cannot remove floating ip %s"
@@ -203,129 +210,46 @@ def fip_type(string):
 
 
 def _check_neutron_floating_ip():
-    parser = argparse.ArgumentParser(
-        description='Check an Floating ip creation. Note that it is able '
-                    + 'to delete *all* floating ips from a account, so '
-                    + 'ensure that nothing important is running on the '
-                    + 'specified account.',
-                    conflict_handler='resolve')
+    neutron = utils.Neutron()
+    neutron.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
+                            help='Override the catalog endpoint.')
+    neutron.add_argument('--force_delete', action='store_true',
+                            help=('If matching floating ip are found, delete '
+                                'them and add a notification in the message '
+                                'instead of getting out in critical state.'))
+    neutron.add_argument('--floating_ip', metavar='floating_ip', type=fip_type,
+                            default=None,
+                            help=('Regex of IP(s) to check for existance. '
+                                'This value can be "all" for conveniance '
+                                '(match all ip). This permit to avoid certain '
+                                'floating ip to be kept. Its default value '
+                                'prevents the removal of any existing '
+                                'floating ip'))
+    neutron.add_argument('--ext_network_name', metavar='ext_network_name',
+                            type=str, default='public',
+                            help=('Name of the "public" external network '
+                            '(public by default)'))
+    options, args, client = neutron.setup()
 
-    parser.add_argument('--auth_url','--os-auth-url', metavar='URL', type=str,
-                        default=os.getenv('OS_AUTH_URL'),
-                        help='url to use for authetication (Deprecated)')
-
-    parser.add_argument('--os-auth-url', dest='auth_url', type=str,
-                        default=os.getenv('OS_AUTH_URL'),
-                        help='url to use for authetication')
-
-    parser.add_argument('--username','--os-username', metavar='username', type=str,
-                        default=os.getenv('OS_USERNAME'),
-                        help='username to use for authentication (Deprecated)')
-
-    parser.add_argument('--os-username',dest='username' ,type=str,
-                        default=os.getenv('OS_USERNAME'),
-                        help='username to use for authentication')
-
-    parser.add_argument('--password','--os-password', metavar='password', type=str,
-                        default=os.getenv('OS_PASSWORD'),
-                        help='password to use for authentication (Deprecated)')
-
-    parser.add_argument('--os-password', dest='password', type=str,
-                        default=os.getenv('OS_PASSWORD'),
-                        help='password to use for authentication')
-
-    parser.add_argument('--tenant','--os-tenant-name', metavar='tenant', type=str,
-                        default=os.getenv('OS_TENANT_NAME'),
-                        help='tenant name to use for authentication (Deprecated)')
-
-    parser.add_argument('--os-tenant-name', dest='tenant', type=str,
-                        default=os.getenv('OS_TENANT_NAME'),
-                        help='tenant name to use for authentication')
-
-
-    parser.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
-                        help='Override the catalog endpoint.')
-
-    parser.add_argument('--endpoint_type','--os-endpoint-type', metavar='endpoint_type', type=str,
-                        default="publicURL",
-                        help='Endpoint type in the catalog request. '
-                        + 'Public by default. (Deprecated)')
-
-    parser.add_argument('--os-enpdoint-type', dest='endpoint_type', type=str,
-                        default="publicURL",
-                        help="""Endpoint type in the catalog request. """
-                             """Public by default.""")
-
-
-    parser.add_argument('--force_delete', action='store_true',
-                        help="""If matching floating ip are found, delete """
-                             """them and add a notification in the message"""
-                             """ instead of getting out in critical """
-                             """state.""")
-
-    parser.add_argument('--timeout','--http-timeout', metavar='timeout', type=int,
-                        default=120,
-                        help='Max number of second to create/delete a '
-                        + 'floating ip (120 by default). (Deprecated)')
-
-    parser.add_argument('--http-timeout', dest='timeout', type=int,
-                        default=120,
-                        help="""Max number of second to create/delete a """
-                             """floating ip (120 by default).""")
-
-    parser.add_argument('--floating_ip', metavar='floating_ip', type=fip_type,
-                        default=None,
-                        help="""Regex of IP(s) to check for existance. """
-                             """This value can be "all" for conveniance """
-                             """(match all ip). This permit to avoid """
-                             """certain floating ip to be kept. Its """
-                             """default value prevents the removal of """
-                             """any existing floating ip""")
-
-    parser.add_argument('--ext_network_name', metavar='ext_network_name',
-                        type=str, default='public',
-                        help='Name of the "public" external network (public by default)')
-
-    parser.add_argument('--verbose', action='count',
-                        help='Print requests on stderr.')
-
-    args = parser.parse_args()
-
-    # this shouldn't raise any exception as no connection is done when
-    # creating the object.  But It may change, so I catch everything.
-    try:
-        nova_client = client.Client(
-            username=args.username,
-            tenant_name=args.tenant,
-            password=args.password,
-            auth_url=args.auth_url,
-        )
-        nova_client.authenticate()
-    except Exception as e:
-        utils.critical("Authentication error: %s\n" % e)
-
-    try:
-        endpoint = nova_client.service_catalog.get_endpoints(
-            'network')['network'][0][args.endpoint_type]
-        if args.endpoint_url:
-            endpoint = mangle_url(endpoint, args.endpoint_url)
-
-        token = nova_client.service_catalog.get_token()['id']
-        if args.verbose:
-            logging.basicConfig(level=logging.DEBUG)
-        neutron_client = neutron.Client('2.0', endpoint_url=endpoint,
-                                        token=token)
-
-    except Exception as e:
-        utils.critical("Error creating neutron object: %s\n" % e)
-    util = Novautils(neutron_client, nova_client.tenant_id)
+    project = (options.os_project_id if options.os_project_id else
+                options.os_project_name)
+    tenant = (options.os_tenant_id if options.os_tenant_id else
+                options.os_tenant_name)
+    util = NeutronUtils(client, tenant or project)
 
     # Initiate the first connection and catch error.
     util.check_connection()
 
-    if args.floating_ip:
-        util.check_existing_floatingip(args.floating_ip, args.force_delete)
-    util.get_network_id(args.ext_network_name)
+    if options.endpoint_url:
+        util.mangle_url(options.endpoint_url)
+        # after mangling the url, the endpoint has changed.  Check that
+        # it's valid.
+        util.check_connection(force=True)
+
+    if options.floating_ip:
+        util.check_existing_floatingip(options.floating_ip,
+                                       options.force_delete)
+    util.get_network_id(options.ext_network_name)
     util.create_floating_ip()
     util.delete_floating_ip()
 
