@@ -165,7 +165,10 @@ class Novautils(object):
     def get_image(self, image_name):
         if not self.msgs:
             try:
-                self.image = self.nova_client.images.find(name=image_name)
+                if hasattr(self.nova_client, 'images'):
+                    self.image = self.nova_client.images.find(name=image_name)
+                else:
+                    self.image = self.nova_client.glance.find_image(image_name)
             except Exception as e:
                 self.msgs.append("Cannot find the image %s (%s)"
                                  % (image_name, e))
@@ -178,11 +181,20 @@ class Novautils(object):
                 self.msgs.append("Cannot find the flavor %s (%s)"
                                  % (flavor_name, e))
 
-    def create_instance(self, instance_name, network):
+    def get_network(self, network_name):
+        if self.msgs or not network_name:
+            self.network = None
+        elif hasattr(self.nova_client, 'networks'):
+            self.network = self.nova_client.networks.find(name=image_name)
+        else:
+            self.network = self.nova_client.neutron.find_network(image_name)
+
+    def create_instance(self, instance_name):
         if not self.msgs:
             kwargs = {}
+
             try:
-                if network:
+                if self.network:
                     try:
                         network = self.nova_client.networks.find(
                             label=network).id
@@ -191,10 +203,10 @@ class Novautils(object):
                             network = self.nova_client.networks.find(
                                 id=network).id
                         except exceptions.NotFound:
-                            self.msgs.append("Cannot found network %s" %
+                            self.msgs.append("Cannot find network %s" %
                                              network)
                             return
-                    kwargs['nics'] = [{'net-id': network}]
+                    kwargs['nics'] = [{'net-id': self.network}]
                 self.instance = self.nova_client.servers.create(
                     name=instance_name,
                     image=self.image,
@@ -271,121 +283,46 @@ class Novautils(object):
 
 
 def _check_nova_instance():
-    parser = argparse.ArgumentParser(
-        description='Check an OpenStack Keystone server.',
-        conflict_handler='resolve')
-
-    parser.add_argument('--auth_url', '--os-auth-url', metavar='URL',
-                        type=str, default=os.getenv('OS_AUTH_URL'),
-                        help='url to use for authetication (Deprecated)')
-
-    parser.add_argument('--os-auth-url', dest='auth_url', type=str,
-                        default=os.getenv('OS_AUTH_URL'),
-                        help='url to use for authetication')
-
-    parser.add_argument('--username', '--os-username', metavar='username',
-                        type=str, default=os.getenv('OS_USERNAME'),
-                        help="""username to use for authentication"""
-                             """ (Deprecated)""")
-
-    parser.add_argument('--os-username', dest='username', type=str,
-                        default=os.getenv('OS_USERNAME'),
-                        help='username to use for authentication')
-
-    parser.add_argument('--password', '--os-password', metavar='password',
-                        type=str, default=os.getenv('OS_PASSWORD'),
-                        help="""password to use for authentication"""
-                             """ (Deprecated)""")
-
-    parser.add_argument('--os-password', dest='password', type=str,
-                        default=os.getenv('OS_PASSWORD'),
-                        help='password to use for authentication')
-
-    parser.add_argument('--tenant', '--os-tenant-name', metavar='tenant',
-                        type=str, default=os.getenv('OS_TENANT_NAME'),
-                        help="""tenant name to use for authentication"""
-                             """ (Deprecated)""")
-
-    parser.add_argument('--os-tenant-name', dest='tenant', type=str,
-                        default=os.getenv('OS_TENANT_NAME'),
-                        help='tenant name to use for authentication')
-
-    parser.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
+    nova = utils.Nova()
+    nova.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
                         help='Override the catalog endpoint.')
 
-    parser.add_argument('--endpoint_type', '--os-endpoint-type',
-                        metavar='endpoint_type', type=str,
-                        default="publicURL",
-                        help="""Endpoint type in the catalog request. """
-                             """Public by default. (Deprecated)""")
-
-    parser.add_argument('--os-endpoint-type', dest='endpoint_type', type=str,
-                        default="publicURL",
-                        help="""Endpoint type in the catalog request. """
-                             """Public by default.""")
-
-    parser.add_argument('--image_name', metavar='image_name', type=str,
+    nova.add_argument('--image_name', metavar='image_name', type=str,
                         default=default_image_name,
                         help="Image name to use (%s by default)"
                         % default_image_name)
 
-    parser.add_argument('--flavor_name', metavar='flavor_name', type=str,
+    nova.add_argument('--flavor_name', metavar='flavor_name', type=str,
                         default=default_flavor_name,
                         help="Flavor name to use (%s by default)"
                         % default_flavor_name)
 
-    parser.add_argument('--instance_name', metavar='instance_name', type=str,
+    nova.add_argument('--instance_name', metavar='instance_name', type=str,
                         default=default_instance_name,
                         help="Instance name to use (%s by default)"
                         % default_instance_name)
 
-    parser.add_argument('--force_delete', action='store_true',
-                        help="""If matching instances are found delete """
-                             """them and add a notification in the message"""
-                             """ instead of getting out in critical state.""")
+    nova.add_argument('--force_delete', action='store_true',
+                        help='If matching instances are found delete '
+                             'them and add a notification in the message'
+                             ' instead of getting out in critical state.')
 
-    parser.add_argument('--api_version', metavar='api_version', type=str,
-                        default='2',
-                        help='Version of the API to use. 2 by default.')
-
-    parser.add_argument('--timeout', metavar='timeout', type=int,
-                        default=120,
-                        help="""Max number of second to create a instance"""
-                             """ (120 by default)""")
-
-    parser.add_argument('--timeout_delete', metavar='timeout_delete',
+    nova.add_argument('--timeout_delete', metavar='timeout_delete',
                         type=int, default=45,
-                        help="""Max number of second to delete an existing """
-                             """instance (45 by default).""")
+                        help='Max number of second to delete an existing '
+                             'instance (45 by default).')
 
-    parser.add_argument('--insecure', action='store_true',
-                        help="The server's cert will not be verified")
+    nova.add_argument('--network', metavar='network', type=str, default=None,
+                        help="Override the network name to use")
 
-    parser.add_argument('--network', metavar='network', type=str,
-                        help="Override the network name or ID to use")
-
-    parser.add_argument('--verbose', action='count',
+    nova.add_argument('--verbose', action='count',
                         help='Print requests on stderr.')
 
-    args = parser.parse_args()
-
-    # this shouldn't raise any exception as no connection is done when
-    # creating the object.  But It may change, so I catch everything.
-    try:
-        nova_client = Client(args.api_version,
-                             username=args.username,
-                             project_id=args.tenant,
-                             api_key=args.password,
-                             auth_url=args.auth_url,
-                             endpoint_type=args.endpoint_type,
-                             http_log_debug=args.verbose,
-                             insecure=args.insecure)
-    except Exception as e:
-        utils.critical("Error creating nova communication object: %s\n" % e)
+    options, args, nova_client = nova.setup()
 
     util = Novautils(nova_client)
 
-    if args.verbose:
+    if options.verbose:
         ch = logging.StreamHandler()
         nova_client.client._logger.setLevel(logging.DEBUG)
         nova_client.client._logger.addHandler(ch)
@@ -393,21 +330,22 @@ def _check_nova_instance():
     # Initiate the first connection and catch error.
     util.check_connection()
 
-    if args.endpoint_url:
-        util.mangle_url(args.endpoint_url)
+    if options.endpoint_url:
+        util.mangle_url(options.endpoint_url)
         # after mangling the url, the endpoint has changed.  Check that
         # it's valid.
         util.check_connection(force=True)
 
-    util.check_existing_instance(args.instance_name,
-                                 args.force_delete,
-                                 args.timeout_delete)
-    util.get_image(args.image_name)
-    util.get_flavor(args.flavor_name)
-    util.create_instance(args.instance_name, args.network)
-    util.instance_ready(args.timeout)
+    util.check_existing_instance(options.instance_name,
+                                 options.force_delete,
+                                 options.timeout_delete)
+    util.get_image(options.image_name)
+    util.get_flavor(options.flavor_name)
+    util.get_network(options.network)
+    util.create_instance(options.instance_name)
+    util.instance_ready(options.timeout)
     util.delete_instance()
-    util.instance_deleted(args.timeout)
+    util.instance_deleted(options.timeout)
 
     if util.msgs:
         utils.critical(", ".join(util.msgs))
