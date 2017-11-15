@@ -1,0 +1,8 @@
+Code-Review+2: Kris Lindgren <klindgren@godaddy.com>
+Workflow+1: Kris Lindgren <klindgren@godaddy.com>
+Verified+2: Zuul
+Submitted-by: Zuul
+Submitted-at: Wed, 15 Nov 2017 16:54:20 +0000
+Reviewed-on: https://review.openstack.org/516381
+Project: openstack/osops-tools-monitoring
+Branch: refs/heads/master
