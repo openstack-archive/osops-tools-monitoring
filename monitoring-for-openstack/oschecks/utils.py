@@ -238,8 +238,16 @@ class Cinder(object):
             client = client.get_client_class(api_version)(
                 options.os_username,
                 options.os_password,
-                options.os_tenant_name,
-                tenant_id=options.os_tenant_id,
+                tenant_name=getattr(
+                    options, 'os_project_name', getattr(
+                        options, 'os_tenant_name', None
+                    )
+                ),
+                tenant_id=getattr(
+                    options, 'os_project_id', getattr(
+                        options, 'os_tenant_id', None
+                    )
+                ),
                 auth_url=options.os_auth_url,
                 region_name=options.os_region_name,
                 cacert=options.os_cacert,

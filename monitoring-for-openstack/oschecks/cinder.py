@@ -41,7 +41,11 @@ def _check_cinder_api():
 
     def quotas_list():
         try:
-            return client.quotas.get(options.os_tenant_name)
+            return client.quotas.get(
+                getattr(options, 'os_project_name',
+                    getattr(options, 'os_tenant_name', None)
+                )
+            )
         except Exception as ex:
             utils.critical(str(ex))
 
@@ -95,8 +99,7 @@ class CinderUtils(object):
         if not self.connection_done or force:
             try:
                 # force a connection to the server
-                self.connection_done = self.client.limits.get(
-                                            tenant_id=self.project)
+                self.connection_done = self.client.limits.get()
             except Exception as e:
                 utils.critical("Cannot connect to cinder: %s" % e)
 
