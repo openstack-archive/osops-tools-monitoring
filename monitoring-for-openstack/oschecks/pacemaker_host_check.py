@@ -68,6 +68,27 @@ def _check_resource_in_host(remaining, match_word, options, local_hostname):
             "(but on %s)" % (options.pacemaker_resource, patterns.group(2))
         )
 
+def _check_resource_in_docker_host(remaining, options, local_hostname):
+    '''Searches for Docker container set resources in an active state and
+    matches the local_hostname on the rest of the line
+
+    Arguments:
+    :param remaining:  (str)-- the rest of the line
+    :param options:    (object)-- main program arguments
+    :param local_hostname: -- localhost
+    '''
+    engine = re.compile('(container set: '+options.pacemaker_resource+''
+                        ' \[.*\].*)')
+    engine2 = re.compile('(?: Master | Slave | Started )(\S*)')
+    pattern = re.search(engine, remaining)
+    if pattern is not None:
+        sremaining = pattern.group(1).split('):')
+        for line in sremaining:
+            host = re.search(engine2, line)
+            if host is not None:
+                if host.group(1) == local_hostname:
+                    _ok_run_script(options)
+
 def _pacemaker_host_check():
     parser = argparse.ArgumentParser(
         description='Check amqp connection of an OpenStack service.')
@@ -87,12 +108,20 @@ def _pacemaker_host_check():
     local_hostname = subprocess.check_output(['hostname', '-s']).strip()
     try:
         if options.crm :
-            output = subprocess.check_output(['crm_mon', '-1'])
+            p = subprocess.Popen(['crm_mon', '-1'], stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            output, error = p.communicate()
         else:
-            output = subprocess.check_output(['pcs', 'status'])
-    except subprocess.CalledProcessError as e:
-        utils.critical('pcs status with status %s: %s' %
-                       e.returncode, e.output)
+            p = subprocess.Popen(['pcs', 'status'], stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            output, error = p.communicate()
+        if p.returncode !=0:
+            if options.crm:
+                utils.critical('pcs status with status {}: {}'
+                               .format(p.returncode, output.strip()))
+            else:
+                utils.critical('pcs status with status {}: {}'
+                               .format(p.returncode, error.strip()))
     except OSError:
         utils.critical('pcs not found')
 
@@ -116,6 +145,9 @@ def _pacemaker_host_check():
             _ok_run_script(options)
         elif resource == 'Clone' :
             _check_resource_in_host(remaining, 'Started:', options,
+                                    local_hostname)
+        elif resource == 'Docker':
+            _check_resource_in_docker_host(remaining, options,
                                     local_hostname)
         elif resource == 'Master/Slave':
             _check_resource_in_host(remaining, 'Masters:', options,
