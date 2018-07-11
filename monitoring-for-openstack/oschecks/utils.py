@@ -181,7 +181,7 @@ class Glance(object):
         (options, args) = self.glance.parser.parse_known_args(self.base_argv)
         if options.help:
             options.command = None
-            self.glance.do_help(options)
+            self.glance.do_help(options, self.glance.parser)
             sys.exit(2)
         api_version = (
             getattr(options, 'os_image_api_version', api_version) or
