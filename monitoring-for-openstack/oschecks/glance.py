@@ -41,7 +41,7 @@ def _check_glance_api():
 
     elapsed, images = utils.timeit(images_list)
     if not images:
-        utils.critical("Unable to contact Glance API.")
+        utils.ok("Glance API is working.")
 
     if elapsed > options.critical:
         utils.critical("Get images took more than %d seconds, "
