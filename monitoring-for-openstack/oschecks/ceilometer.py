@@ -45,14 +45,11 @@ def _check_ceilometer_api():
 
 
     elapsed, meters = utils.timeit(meters_list)
-    if not meters:
-        utils.critical("Unable to contact Ceilometer API.")
-
-    if elapsed > options.critical:
+    if meters and elapsed > options.critical:
         utils.critical("Get meters took more than %d seconds, "
                        "it's too long.|response_time=%d" %
                        (options.critical, elapsed))
-    elif elapsed > options.warning:
+    elif meters and elapsed > options.warning:
         utils.warning("Get meters took more than %d seconds, "
                       "it's too long.|response_time=%d" %
                       (options.warning, elapsed))
