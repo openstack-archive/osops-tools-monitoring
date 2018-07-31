@@ -47,9 +47,6 @@ def _check_nova_api():
             utils.critical(str(ex))
 
     elapsed, flavors = utils.timeit(flavors_list)
-    if not flavors:
-        utils.critical("Unable to contact nova API.")
-
     if elapsed > options.critical:
         utils.critical("Get flavors took more than %d seconds, "
                        "it's too long.|response_time=%d" %
