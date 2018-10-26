@@ -24,6 +24,10 @@ import datetime
 import logging
 import os
 import time
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 
 from novaclient.client import Client  # noqa
 from novaclient import exceptions
@@ -110,7 +114,7 @@ class Novautils(object):
         self.check_connection()
 
         try:
-            endpoint_url = urllib.parse.urlparse(url)
+            endpoint_url = urlparse.urlparse(url)
         except Exception as e:
             utils.unknown("you must provide an endpoint_url in the form"
                           "<scheme>://<url>/ (%s)\n" % e)
@@ -120,7 +124,7 @@ class Novautils(object):
                           "<scheme>://<url>/ (%s)\n" % e)
         catalog_url = None
         try:
-            catalog_url = urllib.parse.urlparse(
+            catalog_url = urlparse.urlparse(
                 self.nova_client.client.management_url)
         except Exception as e:
             utils.unknown("unknown error parsing the catalog url : %s\n" % e)

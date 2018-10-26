@@ -23,7 +23,10 @@ import datetime
 import logging
 import os
 import time
-import urlparse
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 
 from cinderclient.client import Client  # noqa
 from cinderclient import exceptions
