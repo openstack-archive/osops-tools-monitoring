@@ -50,9 +50,6 @@ def _check_cinder_api():
             utils.critical(str(ex))
 
     elapsed, quotas = utils.timeit(quotas_list)
-    if not quotas:
-        utils.critical("Unable to contact cinder API.")
-
     if elapsed > options.critical:
         utils.critical("Get quotas took more than %d seconds, "
                        "it's too long.|response_time=%d" %
