@@ -1,3 +1,0 @@
-testrepository
-python-subunit>=0.0.18
-sphinx
